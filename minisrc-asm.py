@@ -135,7 +135,7 @@ def convert_text_file(file_in, file_out):
         converted = convert_to_bits(line)
         print('{:<20} : '.format(line[:len(line)-1]), f"{converted:#0{10}x}")
         if out:
-            fout.write(f"{converted:#0{10}x}" + "\n")
+            fout.write(f"{converted:#0{10}x}"[2:] + "\n")
 
     if out:
         fout.close()
