@@ -19,8 +19,8 @@ for i in range(0, len(INSTRUCTIONS)):
 BRANCH_TO_COND = {
     "brzr": 0b0000,
     "brnz": 0b0001,
-    "brmi": 0b0010,
-    "brpl": 0b0011,
+    "brpl": 0b0010,
+    "brmi": 0b0011,
 }
 
 REG_MAP = {}
@@ -75,8 +75,24 @@ def convert_to_bits(instruction_text):
         case _:
             raise ValueError("invalid instruction")
 
-    instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (rc << 15)
-    + (c2 << 19) + (c_imm & 0x7ffff)
+    instr_numerical = 0
+    match instruction[0]:
+        case "ld" | "ldi" | "st":
+            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (c_imm & 0x7ffff)
+        case "add" | "sub" | "shr" | "shra" | "shl" | "ror" | "rol" | "and" | "or":
+            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (rc << 15)
+        case "addi" | "andi" | "ori":
+            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (c_imm & 0x7ffff)
+        case "mul" | "div" | "neg" | "not":
+            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19)
+        case "brzr" | "brnz" | "brmi" | "brpl":
+            instr_numerical = (opcode << 27) + (ra << 23) + (c2 << 19) + (c_imm & 0x7ffff)
+        case "jr" | "jal" | "in" | "out" | "mfhi" | "mflo":
+            instr_numerical = (opcode << 27) + (ra << 23)
+        case "nop" | "halt":
+            instr_numerical = (opcode << 27)
+        case _:
+            instr_numerical = 0
 
     return instr_numerical
 
@@ -135,10 +151,16 @@ def example():
         "addi r3, r4, -5",
         "andi r3, r4, 0x53",
         "ori r3, r4, 0x53",
+        "ldi r5, 0x5",
         "brzr R5, 14",
         "brnz r5, 14",
         "brpl r5, 14",
         "brmi r5, 14",
+        "nop",
+        "halt",
+        "ldi r3, 0x95",
+        "ldi r6, 0x95",
+        "mul r3, r6",
         "jr R6",
         "jal r6",
         "mfhi r6",
