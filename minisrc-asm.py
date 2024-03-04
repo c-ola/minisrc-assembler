@@ -43,7 +43,7 @@ branch_to_cond = {
 
 
 def convert_to_bits(instruction_text):
-    instruction = instruction_text.replace(",", "").split()
+    instruction = instruction_text.lower().replace(",", "").split()
 
     if len(instruction) == 0:
         raise ValueError("invalid instruction")
@@ -127,7 +127,7 @@ def setup():
 def convert_text_file(file_in, file_out):
     fin = open(file_in, "r")
     out = file_out is not None
-    
+
     if out:
         fout = open(file_out, "w")
 
@@ -161,7 +161,7 @@ def parse_base(arg):
 def example():
     instructions_example = [
         "ld r2, 0x95",
-        "ld r0, 0x38(r2)",
+        "ld r0, 0x38(R2)",
         "ldi r2, 0x95",
         "ldi r0, 0x38(r2)",
         "st 0x87, r1",
@@ -169,11 +169,11 @@ def example():
         "addi r3, r4, -5",
         "andi r3, r4, 0x53",
         "ori r3, r4, 0x53",
-        "brzr r5, 14",
+        "brzr R5, 14",
         "brnz r5, 14",
         "brpl r5, 14",
         "brmi r5, 14",
-        "jr r6",
+        "jr R6",
         "jal r6",
         "mfhi r6",
         "mflo r7",
