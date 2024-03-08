@@ -8,7 +8,12 @@ python3 minisrc-asm.py -f <ASM_INPUT_FILE> -o <OUTPUT_FILE>
 ```
 Note: If no output file name is specified, output will only be printed to terminal 
 
-## Example
+### Single Instruction
+```sh
+python3 minisrc-asm.py -l "ldi r4, 0x87(r3)"
+```
+
+### Example
 ```sh
 python3 minisrc-asm.py -e
 ```

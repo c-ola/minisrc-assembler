@@ -99,9 +99,10 @@ def convert_to_bits(instruction_text):
 
 def setup():
     parser = argparse.ArgumentParser("instrmaker")
-    parser.add_argument('-f', "--file_in", type=str, help="The input file to convert into a binary file")
+    parser.add_argument('-s', "--file_in", type=str, help="The input file to convert into a binary file")
     parser.add_argument('-o', "--file_out", type=str, help="The output file where resulting binary will be placed")
-    parser.add_argument('-e', "--example", action="store_true", default=False, help="Prints the example code and its assembled machine code")
+    parser.add_argument('-e', "--example", action="store_true", default=False, help="Prints the example code and its machine code")
+    parser.add_argument('-l', "--single", type=str, help="Used to compile a single instruction")
     args = parser.parse_args()
     return args
 
@@ -115,13 +116,19 @@ def convert_text_file(file_in, file_out):
 
     for line in fin.readlines():
         converted = convert_to_bits(line)
-        print('{:<20} : '.format(line[:len(line)-1]), f"{converted:#0{10}x}")
+        print('{:<20} : '.format(line[:len(line)]), f"{converted:#0{10}x}")
         if out:
             fout.write(f"{converted:#0{10}x}"[2:] + "\n")
 
     if out:
         fout.close()
     fin.close()
+    return
+
+
+def convert_single(instruction):
+    converted = convert_to_bits(instruction)
+    print('{:<20} : '.format(instruction[:len(instruction)]), f"{converted:#0{10}x}")
     return
 
 
@@ -146,6 +153,7 @@ def example():
         "ld r0, 0x38(R2)",
         "ldi r2, 0x95",
         "ldi r0, 0x38(r2)",
+        "ldi r1, 0xf",
         "st 0x87, r1",
         "st 0x87(r1), r1",
         "addi r3, r4, -5",
@@ -158,15 +166,14 @@ def example():
         "brmi r5, 14",
         "nop",
         "halt",
-        "ldi r3, 0x95",
-        "ldi r6, 0x95",
-        "mul r3, r6",
-        "jr R6",
-        "jal r6",
+        "ldi r3, 0xfffa",
+        "out r3",
+        "in r4",
+        "mul r3, r4",
         "mfhi r6",
         "mflo r7",
-        "out r3",
-        "in r4"
+        "jr R6",
+        "jal r6"
     ]
     for instr in instructions_example:
         converted = convert_to_bits(instr)
@@ -175,8 +182,10 @@ def example():
 
 if __name__ == "__main__":
     args = setup()
-
+    
     if args.example:
         example()
+    elif args.single is not None:
+        convert_single(args.single)
     else:
         convert_text_file(args.file_in, args.file_out)
