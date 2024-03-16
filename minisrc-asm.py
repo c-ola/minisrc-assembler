@@ -73,7 +73,7 @@ def convert_to_bits(instruction_text, line_num=0, tags=None):
             c2 = BRANCH_TO_COND[instruction[0]]
             res = parse_tag(instruction[2], tags)
             if res is not None:
-                c_imm = res
+                c_imm = res - line_num
             else:
                 c_imm = pint(instruction[2])
         case "jr" | "jal" | "in" | "out" | "mfhi" | "mflo":
@@ -124,10 +124,6 @@ def setup():
 
 def convert_text_file(file_in, file_out):
     fin = open(file_in, "r")
-    out = file_out is not None
-
-    if out:
-        fout = open(file_out, "w")
 
     lines = fin.readlines()
     out_lines = []
@@ -155,6 +151,7 @@ def convert_text_file(file_in, file_out):
                 toks = line.split()
                 if toks[0] == "ORG":
                     orgs.append((line_num, pint(toks[1])))
+                    line_num = line_num - 1
 
         if ':' in line:
             if line.replace("\n", "")[-1] == ':':
@@ -167,9 +164,9 @@ def convert_text_file(file_in, file_out):
     # have to pass in the tags to know the offset from the line number for jump instructions
     # branch instructions can have their tags replaced directly
     # convert instructions
-    line_num = 0
     # print(repr(tags))
     # print(repr(orgs))
+    line_num = 0
     found_org = False
     for line in lines:
         if ':' in line:
@@ -177,18 +174,28 @@ def convert_text_file(file_in, file_out):
         for org in orgs:
             if line_num == org[0]:
                 found_org = True
-                line_num = org[1] + 1
+                line_num = org[1]
                 break
         if found_org:
             found_org = False
+            orgs.pop(0)
             continue
         converted = convert_to_bits(line, line_num, tags)
-        out_lines.append(f"{converted:#0{10}x}"[2:])
+        out_lines.append((line_num, f"{converted:#0{10}x}"[2:]))
         print(line_num, ': {:<30} : '.format(line[:len(line)-1]), f"{converted:#0{10}x}")
-        if out:
-            fout.write(f"{converted:#0{10}x}"[2:] + "\n")
         line_num = line_num + 1
+
+    out = file_out is not None
     if out:
+        fout = open(file_out, "w")
+        i = 0
+        for line in out_lines:
+            while i < line[0]:
+                fout.write("00000000\n")
+                i = i + 1
+            fout.write(line[1] + "\n")
+            i = i + 1
+
         fout.close()
     fin.close()
     return
