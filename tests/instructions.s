@@ -10,9 +10,10 @@ ORG 0
     ldi R2, 6(R2) ; R2 = 0x49
     ld R7, -2(R2) ; R7 = (0x49 - 2) = 0x94
     nop
-    brpl R7, 2 ; continue with the instruction at “target” (will branch)
+    brpl R7, target ; continue with the instruction at “target” (will branch)
     ldi R5, 4(R2) ; this instruction will not execute
     ldi R4, -3(R5) ; this instruction will not execute
+
 target:
     add R2, R2, R3 ; R2 = 0x4C
     addi R7, R7, 3 ; R7 = 0x97
