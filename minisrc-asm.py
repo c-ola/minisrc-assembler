@@ -123,7 +123,7 @@ def setup():
 
 
 def convert_text_file(file_in, file_out):
-    fin = open(file_in, "r")
+    fin = open(file_in, "r", encoding="utf-8")
 
     lines = fin.readlines()
     out_lines = []
@@ -187,7 +187,7 @@ def convert_text_file(file_in, file_out):
 
     out = file_out is not None
     if out:
-        fout = open(file_out, "w")
+        fout = open(file_out, "w", encoding="utf-8")
         i = 0
         for line in out_lines:
             while i < line[0]:
