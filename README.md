@@ -1,8 +1,8 @@
 # minisrc-assembler
-Assembler for mini-src instructions\
+Customizable RISC Assembler.
 Made this for ELEC374 Digital Systems Engineering
 
-Automatically outputs to hex
+NOTE: Only outputs to hex
 
 ## Usage
 ```sh
@@ -17,8 +17,65 @@ python3 minisrc-asm.py -l "ldi r4, 0x87(r3)"
 
 ### Example
 ```sh
-python3 minisrc-asm.py -e
-```
-```sh
 python3 minisrc-asm.py -s tests/instructions.s -o tests/instructions.hex
+```
+
+### Instruction set Configuration
+The configuration for can be (fully?) customized for any different instructions, opcodes, and binary formats.
+It would be useful to also add a textformat that can be configured, this would determine how the instructions should be parsed.
+
+An example of a configuration is:
+```json
+{
+    "name": "example",
+    "word_size": "32",
+    "conditions": {
+        [
+            {
+                "name": "branch",
+                "value": 2 // value that will be placed in spot of condition for instruction with the above name
+            }
+        ]
+    },
+    "formats": [ // format for how values will be placed in each word,
+        {
+            "name": "M",
+            "fields": [ // msb and lsb are the range for where the value will be
+                {
+                    "name": "opcode",
+                    "msb": 31,
+                    "lsb": 27,
+                }
+            ]
+        },
+        {
+            "name": "B",
+            "fields": [ // msb and lsb are the range for where the value will be
+                {
+                    "name": "opcode",
+                    "msb": 31,
+                    "lsb": 27,
+                },
+                {
+                    "name": "condition",
+                    "msb": 26,
+                    "lsb": 25,
+                }
+            ]
+        },
+    ],
+    "instruction": [ // list of instructions in the instruction set
+        {
+            "name": "nop",
+            "opcode": 0,
+            "format": "M"
+        },
+        {
+            "name": branch,
+            "opcode": 1,
+            "format": "B"
+        }
+    ]
+
+}
 ```

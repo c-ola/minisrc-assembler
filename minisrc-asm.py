@@ -1,16 +1,50 @@
 import argparse
 import json
 from dataclasses import dataclass
+from default_config import minisrc
+
 
 DIRECTIVES = [
     "ORG", ".org", "DB", ".db"
 ]
 
-config_file = open("config.json")
+# globals
+
 config = None
-if config_file is not None:
-    config = json.load(config_file)
-    print(config["instructions"])
+INSTR_MAP = {}
+FORMATS = {}
+COND_MAP = {}
+
+
+# instruction config parseing
+
+def set_config(file):
+    config_file = open(file)
+    c = None
+    if config_file is not None:
+        c = json.load(config_file)
+    return c
+
+
+def init_config():
+    instr_map = {}
+    if config is not None:
+        for instr in config["instructions"]:
+            instr_map[instr["name"]] = (instr["opcode"], instr["format"])
+
+    # initialize format map
+    formats = {}
+    for format in config["formats"]:
+        fields = []
+        for field in format["fields"]:
+            fields.append(Field(field["name"], field["msb"], field["lsb"]))
+        formats[format["name"]] = Format(format["name"], fields)
+
+    cond_map = {}
+    for cond in config["conditions"]:
+        cond_map[cond["name"]] = cond["value"]
+
+    return instr_map, formats, cond_map
 
 
 @dataclass
@@ -42,25 +76,7 @@ class Format:
         self.fields = fields
 
 
-INSTR_MAP = {}
-if config is not None:
-    for instr in config["instructions"]:
-        INSTR_MAP[instr["name"]] = (instr["opcode"], instr["format"])
-
-
-# initialize format map
-FORMATS = {}
-for format in config["formats"]:
-    fields = []
-    for field in format["fields"]:
-        fields.append(Field(field["name"], field["msb"], field["lsb"]))
-    FORMATS[format["name"]] = Format(format["name"], fields)
-
-
-COND_MAP = {}
-for cond in config["conditions"]:
-    COND_MAP[cond["name"]] = cond["value"]
-
+# Assembling
 
 def convert_to_bits(instruction_text, line_num=0, tags=None):
     instruction = instruction_text.lower().replace(",", "").split()
@@ -120,16 +136,6 @@ def parse_tag(val, tags):
         if val == tag[0]:
             return tag[1]
     return None
-
-
-def setup():
-    parser = argparse.ArgumentParser("instrmaker")
-    parser.add_argument('-s', "--file_in", type=str, help="The input file to convert into a binary file")
-    parser.add_argument('-o', "--file_out", type=str, help="The output file where resulting binary will be placed")
-    parser.add_argument('-e', "--example", action="store_true", default=False, help="Prints the example code and its machine code")
-    parser.add_argument('-l', "--single", type=str, help="Used to compile a single instruction")
-    args = parser.parse_args()
-    return args
 
 
 def convert_text_file(file_in, file_out):
@@ -232,8 +238,24 @@ def parse_base(arg):
     return (pint(s[0]), s[1])
 
 
+def setup():
+    parser = argparse.ArgumentParser("instrmaker")
+    parser.add_argument('-s', "--file_in", type=str, help="The input file to convert into a binary file")
+    parser.add_argument('-o', "--file_out", type=str, help="The output file where resulting binary will be placed")
+    parser.add_argument('-c', "--instr_config", type=str, help="The configuration for the instructions")
+    parser.add_argument('-l', "--single", type=str, help="Used to compile a single instruction")
+    args = parser.parse_args()
+    return args
+
+
 if __name__ == "__main__":
     args = setup()
+
+    if args.instr_config is not None:
+        config = set_config(args.instr_config)
+    else:
+        config = minisrc
+    INSTR_MAP, FORMATS, COND_MAP = init_config()
 
     if args.single is not None:
         convert_single(args.single)
