@@ -1,35 +1,65 @@
 import argparse
+import json
+from dataclasses import dataclass
 
 DIRECTIVES = [
     "ORG", ".org", "DB", ".db"
 ]
 
-INSTRUCTIONS = [
-    "ld", "ldi", "st", "add", "sub", "shr", "shra", "shl",
-    "ror", "rol", "and", "or", "addi", "andi", "ori",
-    "mul", "div", "neg", "not", "brzr", "brnz", "brmi", "brpl",
-    "jr", "jal", "in", "out", "mfhi", "mflo", "nop", "halt"
-]
+config_file = open("config.json")
+config = None
+if config_file is not None:
+    config = json.load(config_file)
+    print(config["instructions"])
 
-INSTR_TO_OP = {}
-for i in range(0, len(INSTRUCTIONS)):
-    if i >= 0b10011 and i < 0b10011 + 4:
-        INSTR_TO_OP[INSTRUCTIONS[i]] = 0b10011
-    elif i >= 0b10011 + 4:
-        INSTR_TO_OP[INSTRUCTIONS[i]] = i - 3
-    else:
-        INSTR_TO_OP[INSTRUCTIONS[i]] = i
 
-BRANCH_TO_COND = {
-    "brzr": 0b0000,
-    "brnz": 0b0001,
-    "brpl": 0b0010,
-    "brmi": 0b0011,
-}
+@dataclass
+class Instruction:
+    name: str
+    opcode: int
+    format: str
 
-REG_MAP = {}
-for i in range(16):
-    REG_MAP["r" + str(i)] = i
+
+@dataclass
+class Field:
+    name: str
+    msb: int
+    lsb: int
+
+    def __init__(self, name: str, msb: int, lsb: int):
+        self.name = name
+        self.msb = msb
+        self.lsb = lsb
+
+
+@dataclass
+class Format:
+    name: str
+    fields: []
+
+    def __init__(self, name: str, fields: []):
+        self.name = name
+        self.fields = fields
+
+
+INSTR_MAP = {}
+if config is not None:
+    for instr in config["instructions"]:
+        INSTR_MAP[instr["name"]] = (instr["opcode"], instr["format"])
+
+
+# initialize format map
+FORMATS = {}
+for format in config["formats"]:
+    fields = []
+    for field in format["fields"]:
+        fields.append(Field(field["name"], field["msb"], field["lsb"]))
+    FORMATS[format["name"]] = Format(format["name"], fields)
+
+
+COND_MAP = {}
+for cond in config["conditions"]:
+    COND_MAP[cond["name"]] = cond["value"]
 
 
 def convert_to_bits(instruction_text, line_num=0, tags=None):
@@ -38,71 +68,51 @@ def convert_to_bits(instruction_text, line_num=0, tags=None):
     if len(instruction) == 0:
         raise ValueError("invalid instruction")
 
-    opcode, ra, rb, rc, c2, c_imm = 0, 0, 0, 0, 0, 0
+    opcode, format = INSTR_MAP[instruction[0]]
+    instr_num = 0
+    for field in FORMATS[format].fields:
+        mask = ((1 << (field.msb + 1)) - (1 << field.lsb)) >> field.lsb
+        match field.name:
+            case "opcode":
+                instr_num |= (opcode & mask) << field.lsb
+            case "Ra":
+                # could maybe add something to the config to show where register are in text format
+                # first token that starts with 'r' is Ra
+                for tok in instruction[1:]:
+                    if tok.startswith('r'):
+                        instr_num |= (int(tok.replace('r', '')) & mask) << field.lsb
+                        break
+            case "Rb":
+                # either first inside parentheses or second token
+                rb = None
+                for tok in instruction[1:]:
+                    if tok[0].isdigit() or tok[0] == '-':
+                        rb = parse_base(tok)[1]
+                        break
+                if rb is None:
+                    rb = instruction[2]
+                instr_num |= (int(rb.replace('r', '')) & mask) << field.lsb
+            case "Rc":
+                rc = instruction[3]
+                instr_num |= (int(rc.replace('r', '')) & mask) << field.lsb
+            case "C":
+                for tok in instruction[1:]:
+                    res = parse_tag(tok, tags)
+                    if tok[0].isdigit() or tok[0] == '-' or res is not None:
+                        imm = 0
+                        if res is not None:
+                            imm = res - line_num
+                        else:
+                            imm = parse_base(tok)[0] if chr(40) in tok else pint(tok)
 
-    opcode = INSTR_TO_OP[instruction[0]]
-    if len(instruction) >= 2:
-        if instruction[0] == "st":
-            ra = REG_MAP[instruction[2]]
-        elif instruction[0] != "halt" and instruction[0] != "stop":
-            ra = REG_MAP[instruction[1]]
+                        instr_num |= (imm & mask) << field.lsb
+                        break
+            case "condition":
+                instr_num |= (COND_MAP[instruction[0]] & mask) << field.lsb
+            case _:
+                raise ValueError("invalid field in config")
 
-    # need revision for signed
-    match instruction[0]:
-        case "ld" | "ldi":
-            parsed = parse_base(instruction[2])
-            rb = REG_MAP[parsed[1]]
-            c_imm = parsed[0]
-        case "st":
-            parsed = parse_base(instruction[1])
-            rb = REG_MAP[parsed[1]]
-            c_imm = parsed[0]
-        case "add" | "sub" | "shr" | "shra" | "shl" | "ror" | "rol" | "and" | "or":
-            ra = REG_MAP[instruction[1]]
-            rb = REG_MAP[instruction[2]]
-            rc = REG_MAP[instruction[3]]
-        case "addi" | "andi" | "ori":
-            ra = REG_MAP[instruction[1]]
-            rb = REG_MAP[instruction[2]]
-            c_imm = pint(instruction[3])
-        case "mul" | "div" | "neg" | "not":
-            ra = REG_MAP[instruction[1]]
-            rb = REG_MAP[instruction[2]]
-        case "brzr" | "brnz" | "brmi" | "brpl":
-            ra = REG_MAP[instruction[1]]
-            c2 = BRANCH_TO_COND[instruction[0]]
-            res = parse_tag(instruction[2], tags)
-            if res is not None:
-                c_imm = res - line_num
-            else:
-                c_imm = pint(instruction[2])
-        case "jr" | "jal" | "in" | "out" | "mfhi" | "mflo":
-            ra = REG_MAP[instruction[1]]
-        case "nop" | "halt":
-            pass
-        case _:
-            raise ValueError("invalid instruction")
-
-    instr_numerical = 0
-    match instruction[0]:
-        case "ld" | "ldi" | "st":
-            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (c_imm & 0x7ffff)
-        case "add" | "sub" | "shr" | "shra" | "shl" | "ror" | "rol" | "and" | "or":
-            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (rc << 15)
-        case "addi" | "andi" | "ori":
-            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19) + (c_imm & 0x7ffff)
-        case "mul" | "div" | "neg" | "not":
-            instr_numerical = (opcode << 27) + (ra << 23) + (rb << 19)
-        case "brzr" | "brnz" | "brmi" | "brpl":
-            instr_numerical = (opcode << 27) + (ra << 23) + (c2 << 19) + (c_imm & 0x7ffff)
-        case "jr" | "jal" | "in" | "out" | "mfhi" | "mflo":
-            instr_numerical = (opcode << 27) + (ra << 23)
-        case "nop" | "halt":
-            instr_numerical = (opcode << 27)
-        case _:
-            instr_numerical = 0
-
-    return instr_numerical
+    return instr_num
 
 
 def parse_tag(val, tags):
@@ -216,51 +226,18 @@ def pint(num_str):
 
 
 def parse_base(arg):
-    if ("(" not in arg):
+    if (chr(40) not in arg):
         return pint(arg), "r0"
-    s = arg[0:len(arg)-1].split("(")
-    return pint(s[0]), s[1]
-
-
-def example():
-    instructions_example = [
-        "ld r2, 0x95",
-        "ld r0, 0x38(R2)",
-        "ldi r2, 0x95",
-        "ldi r0, 0x38(r2)",
-        "ldi r1, 0xf",
-        "st 0x87, r1",
-        "st 0x87(r1), r1",
-        "addi r3, r4, -5",
-        "andi r3, r4, 0x53",
-        "ori r3, r4, 0x53",
-        "ldi r5, 0x5",
-        "brzr R5, 14",
-        "brnz r5, 14",
-        "brpl r5, 14",
-        "brmi r5, 14",
-        "nop",
-        "halt",
-        "ldi r3, 0xfffa",
-        "out r3",
-        "in r4",
-        "mul r3, r4",
-        "mfhi r6",
-        "mflo r7",
-        "jr R6",
-        "jal r6"
-    ]
-    for instr in instructions_example:
-        converted = convert_to_bits(instr)
-        print('{:<20} : '.format(instr), f"{converted:#0{10}x}")
+    s = arg[0:len(arg)-1].split(chr(40))  # fmt bugs out from left brkt
+    return (pint(s[0]), s[1])
 
 
 if __name__ == "__main__":
     args = setup()
-    
-    if args.example:
-        example()
-    elif args.single is not None:
+
+    if args.single is not None:
         convert_single(args.single)
-    else:
+    elif args.file_in is not None:
         convert_text_file(args.file_in, args.file_out)
+    else:
+        print("use -h to view options")
