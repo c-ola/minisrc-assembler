@@ -1,5 +1,5 @@
 # minisrc-assembler
-Assembler for mini-src instructions
+Assembler for mini-src instructions\
 Made this for ELEC374 Digital Systems Engineering
 
 Automatically outputs to hex
