@@ -36,7 +36,7 @@ An example of a configuration is:
     "textformats": [ // the fields must be in the order that they would be in assembly
         {
             "name": "one_reg",
-            "fields": [ "opcode", Ra ]
+            "fields": [ "opcode", "Ra" ]
         },
         {
             "name": "misc",
