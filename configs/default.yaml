@@ -1,7 +1,6 @@
 ---
 name: elec374-minisrc
 word_size: 32
-
 # Text format of instructions
 textformats:
 - name: load

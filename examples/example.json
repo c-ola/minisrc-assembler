@@ -11,14 +11,12 @@
             "fields": [ "opcode" ]
         }
     ],
-    "conditions": {
-        [
-            {
-                "name": "branch",
-                "value": 2
-            }
-        ]
-    },
+    "conditions":[
+        {
+            "name": "branch",
+            "value": 2
+        }
+    ],
     "formats": [
         {
             "name": "M",
@@ -26,7 +24,7 @@
                 {
                     "name": "opcode",
                     "msb": 31,
-                    "lsb": 28,
+                    "lsb": 28
                 }
             ]
         },
@@ -36,12 +34,12 @@
                 {
                     "name": "opcode",
                     "msb": 31,
-                    "lsb": 28,
+                    "lsb": 28
                 },
                 {
                     "name": "condition",
                     "msb": 19,
-                    "lsb": 16,
+                    "lsb": 16
                 },
                 {
                     "name": "Ra",
@@ -49,18 +47,20 @@
                     "lsb": 0
                 }
             ]
-        },
+        }
     ],
-    "instruction": [
+    "instructions": [
         {
             "name": "nop",
             "opcode": 13,
-            "format": "M"
+            "format": "M",
+            "textformat": "misc"
         },
         {
-            "name": branch,
+            "name": "branch",
             "opcode": 4,
-            "format": "B"
+            "format": "B",
+            "textformat": "one_reg"
         }
     ]
 }

@@ -43,15 +43,33 @@ class Config:
     def __init__(self, filename=None, useyaml=False):
         config = minisrc
         if filename is not None:
-            f = open(filename)
-            if useyaml:
-                config = yaml.safe_load(f)
-            else:
+            if filename.endswith("yaml") | filename.endswith("yml") | useyaml:
+                try:
+                    f = open(filename, 'r')
+                    config = yaml.safe_load(f)
+                    f.close()
+                except yaml.YAMLError as exc:
+                    print("Error in yaml config file: ", exc)
+                    if hasattr(exc, 'problem_mark'):
+                        if exc.context is not None:
+                            print('  parser says\n' + str(exc.problem_mark))
+                            print('   '+str(exc.problem)+' '+str(exc.context))
+                            print("Please correct data and retry")
+                        else:
+                            print('  parser says\n' + str(exc.problem_mark))
+                            print('   '+str(exc.problem))
+                            print("Please correct data and retry")
+                    else:
+                        print("Something went wrong while parsing yaml file")
+
+            elif filename.endswith("json") | True:
+                f = open(filename)
                 config = json.load(f)
-            f.close()
+                f.close()
 
         for instr in config["instructions"]:
-            self.instr_map[instr["name"]] = (instr["opcode"], instr["format"], instr["textformat"])
+            self.instr_map[instr["name"]] = (instr["opcode"], instr["format"],
+                                             instr["textformat"])
 
         # initialize format map
         for format in config["formats"]:
