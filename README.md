@@ -1,12 +1,12 @@
 # minisrc-assembler
-Customizable RISC Assembler.
-Made this for ELEC374 Digital Systems Engineering
+Customizable RISC Assembler by describing a language in yaml or json.
+Originally made this for ELEC374 Digital Systems Engineering
 
-NOTE: Only outputs to hex
+Note: One feature that could be missing that is useful is custom ways to interpret values. At the moment you technically could do whatever you want in things like branch instructions through the opcode and extra formats, however the configurations for that would be very clunky. There might be a way to solve this similar to how conditions are done, however it is difficult for me to describe.
 
 ## Usage
-Flag `-x` (`--hex`) makes the numbers output in hexadecimal to the file in utf-8.
-`-b` makes it output binary in utf-8.
+Flag `-x` (`--hex`) makes the numbers output in hexadecimal to the file in utf-8.\
+`-b` makes it output binary in utf-8.\
 No flag (default) will cause it to write to the file as binary (no encoding)
 ```sh
 python3 minisrc-asm.py -s <ASM_INPUT_FILE> -o <OUTPUT_FILE>
@@ -29,7 +29,7 @@ The configuration for can be (fully?) customized for any different instructions,
 
 To interpret a value in a field in a certain way, the field must have a certain string inside of it. The strings are:
 - opcode: raw value
-- R: as a register
+- R: as a register (The value of the register in the machine instruction is directly taken from the assembly instruction)
 - imm: as an immediate value
 
 An example of a configuration is:
@@ -63,7 +63,7 @@ Running with this configurations gives
 ```sh
 python3 minisrc-asm.py -c examples/example.yaml --use-yaml -l "branch r5"
 branch r5            :  0x40020005
-python3 minisrc-asm.py -c examples/example.yaml --use-yaml -l "branch r5"
+python3 minisrc-asm.py -c examples/example.yaml --use-yaml -l "nop"
 nop                  :  0xd0000000
 ```
 
