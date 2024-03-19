@@ -33,11 +33,46 @@ To interpret a value in a field in a certain way, the field must have a certain 
 - imm: as an immediate value
 
 An example of a configuration is:
+```yaml
+---
+name: example
+word_size: 32
+textformats: # the fields must be in the order that they would be in assembly
+    - name: one_reg
+      fields: [opcode, Ra]
+    - name: misc
+      fields: [opcode]
+conditions:
+    - name: branch
+      value: 2 # value that will be placed in spot of condition for instruction with the above name
+formats: # format for how values will be placed in each word
+    - name: M
+      fields:  # msb and lsb are the range for where the value will be
+        - { name: opcode, msb: 31, lsb: 28 }
+    - name: B
+      fields: 
+        - { name: opcode, msb: 31, lsb: 28 }
+        - { name: condition, msb: 19, lsb: 16 }
+        - { name: Ra, msb: 3, lsb: 0 } 
+instructions:  # list of instructions in the instruction sete
+  - { name: nop, opcode: 13, format: M, textformat: misc }
+  - { name: branch, opcode: 4, format: B, textformat: one_reg }
+```
+
+Running with this configurations gives
+```sh
+python3 minisrc-asm.py -c examples/example.yaml --use-yaml -l "branch r5"
+branch r5            :  0x40020005
+python3 minisrc-asm.py -c examples/example.yaml --use-yaml -l "branch r5"
+nop                  :  0xd0000000
+```
+
+This can also be done in json although it is a little longer:
 ```json
 {
     "name": "example",
     "word_size": "32",
-    "textformats": [ // the fields must be in the order that they would be in assembly
+    "textformats": [
         {
             "name": "one_reg",
             "fields": [ "opcode", "Ra" ]
@@ -51,49 +86,53 @@ An example of a configuration is:
         [
             {
                 "name": "branch",
-                "value": 2 // value that will be placed in spot of condition for instruction with the above name
+                "value": 2
             }
         ]
     },
-    "formats": [ // format for how values will be placed in each word,
+    "formats": [
         {
             "name": "M",
-            "fields": [ // msb and lsb are the range for where the value will be
+            "fields": [
                 {
                     "name": "opcode",
                     "msb": 31,
-                    "lsb": 27,
+                    "lsb": 28,
                 }
             ]
         },
         {
             "name": "B",
-            "fields": [ // msb and lsb are the range for where the value will be
+            "fields": [
                 {
                     "name": "opcode",
                     "msb": 31,
-                    "lsb": 27,
+                    "lsb": 28,
                 },
                 {
                     "name": "condition",
-                    "msb": 26,
-                    "lsb": 25,
+                    "msb": 19,
+                    "lsb": 16,
+                },
+                {
+                    "name": "Ra",
+                    "msb": 3,
+                    "lsb": 0
                 }
             ]
         },
     ],
-    "instruction": [ // list of instructions in the instruction set
+    "instruction": [
         {
             "name": "nop",
-            "opcode": 0,
+            "opcode": 13,
             "format": "M"
         },
         {
             "name": branch,
-            "opcode": 1,
+            "opcode": 4,
             "format": "B"
         }
     ]
-
 }
 ```

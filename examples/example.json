@@ -1,0 +1,66 @@
+{
+    "name": "example",
+    "word_size": "32",
+    "textformats": [
+        {
+            "name": "one_reg",
+            "fields": [ "opcode", "Ra" ]
+        },
+        {
+            "name": "misc",
+            "fields": [ "opcode" ]
+        }
+    ],
+    "conditions": {
+        [
+            {
+                "name": "branch",
+                "value": 2
+            }
+        ]
+    },
+    "formats": [
+        {
+            "name": "M",
+            "fields": [
+                {
+                    "name": "opcode",
+                    "msb": 31,
+                    "lsb": 28,
+                }
+            ]
+        },
+        {
+            "name": "B",
+            "fields": [
+                {
+                    "name": "opcode",
+                    "msb": 31,
+                    "lsb": 28,
+                },
+                {
+                    "name": "condition",
+                    "msb": 19,
+                    "lsb": 16,
+                },
+                {
+                    "name": "Ra",
+                    "msb": 3,
+                    "lsb": 0
+                }
+            ]
+        },
+    ],
+    "instruction": [
+        {
+            "name": "nop",
+            "opcode": 13,
+            "format": "M"
+        },
+        {
+            "name": branch,
+            "opcode": 4,
+            "format": "B"
+        }
+    ]
+}
