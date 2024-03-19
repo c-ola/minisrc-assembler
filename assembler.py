@@ -95,6 +95,8 @@ class Assembler:
             print('{:<20} : '.format(instr[:len(instr)]), f"{num:#0{34}b}")
         elif self.mode == "hex":
             print('{:<20} : '.format(instr[:len(instr)]), f"{num:#0{10}x}")
+        else:
+            print('{:<20} : '.format(instr[:len(instr)]), f"{num:#0{10}x}")
 
     def find_orgs_and_tags(self, lines):
         line_num = 0
