@@ -19,13 +19,16 @@ def setup():
                         help="Used to compile to hex")
     parser.add_argument('-v', "--verbose", action="store_true",
                         help="Show outputs when reading file")
+    parser.add_argument("-y", "--use-yaml", action="store_true",
+                        help="Use yaml as your configuration file")
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = setup()
-    config = Config(args.instr_config)
+    config = Config(args.instr_config, useyaml=args.use_yaml)
+
     mode = "binary"
     if args.hex:
         mode = "hex"

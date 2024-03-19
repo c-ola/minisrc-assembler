@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from default_config import minisrc
+from configs.default import minisrc
 import json
+import yaml
 
 
 @dataclass
@@ -39,11 +40,14 @@ class Config:
     textformats = {}
 
     # instruction config parseing
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, useyaml=False):
         config = minisrc
         if filename is not None:
             f = open(filename)
-            config = json.load(f)
+            if useyaml:
+                config = yaml.safe_load(f)
+            else:
+                config = json.load(f)
             f.close()
 
         for instr in config["instructions"]:
