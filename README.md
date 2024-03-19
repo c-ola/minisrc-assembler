@@ -5,6 +5,9 @@ Made this for ELEC374 Digital Systems Engineering
 NOTE: Only outputs to hex
 
 ## Usage
+Flag `-x` (`--hex`) makes the numbers output in hexadecimal to the file in utf-8.
+`-b` makes it output binary in utf-8.
+No flag (default) will cause it to write to the file as binary (no encoding)
 ```sh
 python3 minisrc-asm.py -s <ASM_INPUT_FILE> -o <OUTPUT_FILE>
 ```
@@ -16,8 +19,9 @@ python3 minisrc-asm.py -l "ldi r4, 0x87(r3)"
 ```
 
 ### Example
+`-v` will cause the program to print out each instruction as and its converted format in hex
 ```sh
-python3 minisrc-asm.py -s tests/instructions.s -o tests/instructions.hex
+python3 minisrc-asm.py -v -s tests/instructions.s -o tests/instructions.hex
 ```
 
 ### Instruction set Configuration
