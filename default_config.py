@@ -1,6 +1,58 @@
+# DO NOT AUTO FORMAT THIS FILE, IT WONT BREAK RUNNING WITH NO CONFIG
+# BUT IT MIGHT ADD COMMAS WHICH WILL BREAK IT IF USED FROM A JSON FILE
 minisrc = {
     "name": "elec374-minisrc",
     "word_size": 32,
+    "textformats": [
+        {
+            "name": "load",
+            "fields": [
+                "opcode", "Ra", "Rb_c_imm"
+            ]
+        },
+        {
+            "name": "store",
+            "fields": [
+                "opcode", "c_imm_reg", "Ra"
+            ]
+        },
+        {
+            "name": "arithmetic",
+            "fields": [
+                "opcode", "Ra", "Rb", "Rc"
+            ]
+        },
+        {
+            "name": "arithmetic_immediate",
+            "fields": [
+                "opcode", "Ra", "Rb", "c_imm"
+            ]
+        },
+        {
+            "name": "two_reg",
+            "fields": [
+                "opcode", "Ra", "Rb"
+            ]
+        },
+        {
+            "name": "branch",
+            "fields": [
+                "opcode", "Ra", "c_imm"
+            ]
+        },
+        {
+            "name": "one_reg",
+            "fields": [
+                "opcode", "Ra"
+            ]
+        },
+        {
+            "name": "misc",
+            "fields": [
+                "opcode"
+            ]
+        }
+    ],
     "conditions": [
         {
             "name": "brzr",
@@ -64,7 +116,7 @@ minisrc = {
                     "lsb" : 19
                 },
                 {
-                    "name": "C",
+                    "name": "c_imm",
                     "msb" : 18,
                     "lsb" : 0
                 }
@@ -89,7 +141,7 @@ minisrc = {
                     "lsb" : 19
                 },
                 {
-                    "name": "C",
+                    "name": "c_imm",
                     "msb" : 18,
                     "lsb" : 0
                 }
@@ -125,157 +177,188 @@ minisrc = {
         {
             "name": "ld",
             "opcode": 0,
-            "format": "I"
+            "format": "I",
+            "textformat": "load"
         },
         {
             "name": "ldi",
             "opcode": 1,
-            "format": "I"
+            "format": "I",
+            "textformat": "load"
         },
         {
             "name": "st",
             "opcode": 2,
-            "format": "I"
+            "format": "I",
+            "textformat": "store"
         },
         {
             "name": "add",
             "opcode": 3,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "sub",
             "opcode": 4,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "shr",
             "opcode": 5,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "shra",
             "opcode": 6,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "shl",
             "opcode": 7,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "ror",
             "opcode": 8,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "rol",
             "opcode": 9,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "and",
             "opcode": 10,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "or",
             "opcode": 11,
-            "format": "R"
+            "format": "R",
+            "textformat": "arithmetic"
         },
         {
             "name": "addi",
             "opcode": 12,
-            "format": "I"
+            "format": "I",
+            "textformat": "arithmetic_immediate"
         },
         {
             "name": "andi",
             "opcode": 13,
-            "format": "I"
+            "format": "I",
+            "textformat": "arithmetic_immediate"
         },
         {
             "name": "ori",
             "opcode": 14,
-            "format": "I"
+            "format": "I",
+            "textformat": "arithmetic_immediate"
         },
         {
             "name": "mul",
             "opcode": 15,
-            "format": "I"
+            "format": "I",
+            "textformat": "two_reg"
         },
         {
             "name": "div",
             "opcode": 16,
-            "format": "I"
+            "format": "I",
+            "textformat": "two_reg"
         },
         {
             "name": "neg",
             "opcode": 17,
-            "format": "I"
+            "format": "I",
+            "textformat": "two_reg"
         },
         {
             "name": "not",
             "opcode": 18,
-            "format": "I"
+            "format": "I",
+            "textformat": "two_reg"
         },
         {
             "name": "brzr",
             "opcode": 19,
-            "format": "B"
+            "format": "B",
+            "textformat": "branch"
         },
         {
             "name": "brnz",
             "opcode": 19,
-            "format": "B"
+            "format": "B",
+            "textformat": "branch"
         },
         {
             "name": "brpl",
             "opcode": 19,
-            "format": "B"
+            "format": "B",
+            "textformat": "branch"
         },
         {
             "name": "brmi",
             "opcode": 19,
-            "format": "B"
+            "format": "B",
+            "textformat": "branch"
         },
         {
             "name": "jr",
             "opcode": 20,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "jal",
             "opcode": 21,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "in",
             "opcode": 22,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "out",
             "opcode": 23,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "mfhi",
             "opcode": 24,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "mflo",
             "opcode": 25,
-            "format": "J"
+            "format": "J",
+            "textformat": "one_reg"
         },
         {
             "name": "nop",
             "opcode": 26,
-            "format": "M"
+            "format": "M",
+            "textformat": "misc"
         },
         {
             "name": "halt",
             "opcode": 27,
-            "format": "M"
+            "format": "M",
+            "textformat": "misc"
         }
     ]
 }

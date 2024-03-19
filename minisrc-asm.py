@@ -14,23 +14,20 @@ config = None
 INSTR_MAP = {}
 FORMATS = {}
 COND_MAP = {}
+TEXTFORMATS = {}
 
+
+class Assembler:
+    config = None
 
 # instruction config parseing
-
-def set_config(file):
-    config_file = open(file)
-    c = None
-    if config_file is not None:
-        c = json.load(config_file)
-    return c
-
-
 def init_config():
+    if config is None:
+        raise ValueError("No instruction configuration setup")
+
     instr_map = {}
-    if config is not None:
-        for instr in config["instructions"]:
-            instr_map[instr["name"]] = (instr["opcode"], instr["format"])
+    for instr in config["instructions"]:
+        instr_map[instr["name"]] = (instr["opcode"], instr["format"], instr["textformat"])
 
     # initialize format map
     formats = {}
@@ -44,7 +41,11 @@ def init_config():
     for cond in config["conditions"]:
         cond_map[cond["name"]] = cond["value"]
 
-    return instr_map, formats, cond_map
+    textformat = {}
+    for tf in config["textformats"]:
+        textformat[tf["name"]] = Format(tf["name"], tf["fields"])
+
+    return instr_map, formats, cond_map, textformat
 
 
 @dataclass
@@ -77,91 +78,73 @@ class Format:
 
 
 # Assembling
-
+# should have identifiers like op = opcode, RegA = Ra, ImmValC = c
+# this would make it so that you have to prefix your fields in the config
+# but it would also allow for complete freedom in what instructions you can make
 def convert_to_bits(instruction_text, line_num=0, tags=None):
     instruction = instruction_text.lower().replace(",", "").split()
 
     if len(instruction) == 0:
         raise ValueError("invalid instruction")
 
-    opcode, format = INSTR_MAP[instruction[0]]
+    opcode, format, textformat = INSTR_MAP[instruction[0]]
     instr_num = 0
+    tf_fields = TEXTFORMATS[textformat].fields
     for field in FORMATS[format].fields:
         mask = ((1 << (field.msb + 1)) - (1 << field.lsb)) >> field.lsb
-        match field.name:
-            case "opcode":
-                instr_num |= (opcode & mask) << field.lsb
-            case "Ra":
-                # could maybe add something to the config to show where register are in text format
-                # first token that starts with 'r' is Ra
-                for tok in instruction[1:]:
-                    if tok.startswith('r'):
-                        instr_num |= (int(tok.replace('r', '')) & mask) << field.lsb
-                        break
-            case "Rb":
-                # either first inside parentheses or second token
-                rb = None
-                for tok in instruction[1:]:
-                    if tok[0].isdigit() or tok[0] == '-':
-                        rb = parse_base(tok)[1]
-                        break
-                if rb is None:
-                    rb = instruction[2]
-                instr_num |= (int(rb.replace('r', '')) & mask) << field.lsb
-            case "Rc":
-                rc = instruction[3]
-                instr_num |= (int(rc.replace('r', '')) & mask) << field.lsb
-            case "C":
-                for tok in instruction[1:]:
-                    res = parse_tag(tok, tags)
-                    if tok[0].isdigit() or tok[0] == '-' or res is not None:
-                        imm = 0
-                        if res is not None:
-                            imm = res - line_num
-                        else:
-                            imm = parse_base(tok)[0] if chr(40) in tok else pint(tok)
+        # gets the index of the binary field in the text instruction field
+        index = None
+        for i in range(len(TEXTFORMATS[textformat].fields)):
+            textfield = TEXTFORMATS[textformat].fields[i]
+            if field.name in textfield:
+                index = i
 
-                        instr_num |= (imm & mask) << field.lsb
-                        break
-            case "condition":
+        # no index found, just go next or do branch condition
+        if index is None:
+            if "condition" == field.name:
                 instr_num |= (COND_MAP[instruction[0]] & mask) << field.lsb
-            case _:
-                raise ValueError("invalid field in config")
+            continue
+
+        token = instruction[index]
+        if "op" in field.name:
+            instr_num |= (opcode & mask) << field.lsb
+        elif 'R' in field.name and 'imm' not in tf_fields[index]:
+            reg = instruction[index]
+            instr_num |= (int(reg.replace('r', '')) & mask) << field.lsb
+        elif 'R' in field.name and 'imm' in tf_fields[index]:
+            reg = parse_base(instruction[index])[1]
+            instr_num |= (int(reg.replace('r', '')) & mask) << field.lsb
+        elif 'imm' in field.name:
+            res = parse_tag(token, tags)
+            if res is not None:
+                imm = res - line_num
+            else:
+                imm = parse_base(token)[0] if chr(40) in token else pint(token)
+            instr_num |= (imm & mask) << field.lsb
+        else:
+            raise ValueError("invalid field in config")
 
     return instr_num
 
 
 def parse_tag(val, tags):
+    if tags is None:
+        return None
     for tag in tags:
         if val == tag[0]:
             return tag[1]
     return None
 
 
-def convert_text_file(file_in, file_out):
-    fin = open(file_in, "r", encoding="utf-8")
-
-    lines = fin.readlines()
-    out_lines = []
+def find_orgs_and_tags(lines):
+    orgs = []
     tags = []
     line_num = 0
-    orgs = []
-
-    # remove comments
-    i = 0
-    while i < len(lines):
-        if lines[i] == "\n":
-            lines.pop(i)
-            continue
-        else:
-            lines[i] = lines[i].split(";", 1)[0]
-        i = i + 1
-
     # find all tags
     # tags represent the address of the instruction directly under them
-
+    # put in own function
     for line in lines:
-        # remove comments
+        # removes comments
         for directive in DIRECTIVES:
             if directive in line:
                 toks = line.split()
@@ -176,13 +159,32 @@ def convert_text_file(file_in, file_out):
                 raise ValueError("Invalid Syntax at line: ", line_num, "near: ", line)
         else:  # only increase line number on lines with actual instructions
             line_num = line_num + 1
+    return orgs, tags
 
-    # have to pass in the tags to know the offset from the line number for jump instructions
+
+def remove_comments(lines):
+    # remove comments
+    i = 0
+    while i < len(lines):
+        if lines[i] == "\n":
+            lines.pop(i)
+            continue
+        else:
+            lines[i] = lines[i].split(";", 1)[0]
+        i = i + 1
+
+
+def convert_text_file(file_in, file_out):
+    fin = open(file_in, "r", encoding="utf-8")
+
+    lines = fin.readlines()
+    remove_comments(lines)
+    orgs, tags = find_orgs_and_tags(lines)
+
     # branch instructions can have their tags replaced directly
     # convert instructions
-    # print(repr(tags))
-    # print(repr(orgs))
     line_num = 0
+    out_lines = []
     found_org = False
     for line in lines:
         if ':' in line:
@@ -197,8 +199,9 @@ def convert_text_file(file_in, file_out):
             orgs.pop(0)
             continue
         converted = convert_to_bits(line, line_num, tags)
+
         out_lines.append((line_num, f"{converted:#0{10}x}"[2:]))
-        print(line_num, ': {:<30} : '.format(line[:len(line)-1]), f"{converted:#0{10}x}")
+        print(f"{line_num:#0{4}x}:", ': {:<30} : '.format(line[:len(line)-1]), f"{converted:#0{10}x}")
         line_num = line_num + 1
 
     out = file_out is not None
@@ -220,7 +223,6 @@ def convert_text_file(file_in, file_out):
 def convert_single(instruction):
     converted = convert_to_bits(instruction)
     print('{:<20} : '.format(instruction[:len(instruction)]), f"{converted:#0{10}x}")
-    return
 
 
 def pint(num_str):
@@ -240,10 +242,16 @@ def parse_base(arg):
 
 def setup():
     parser = argparse.ArgumentParser("instrmaker")
-    parser.add_argument('-s', "--file_in", type=str, help="The input file to convert into a binary file")
-    parser.add_argument('-o', "--file_out", type=str, help="The output file where resulting binary will be placed")
-    parser.add_argument('-c', "--instr_config", type=str, help="The configuration for the instructions")
-    parser.add_argument('-l', "--single", type=str, help="Used to compile a single instruction")
+    parser.add_argument('-s', "--file_in", type=str,
+                        help="The input file to convert into a binary file")
+    parser.add_argument('-o', "--file_out", type=str,
+                        help="The output file of the resulting binary")
+    parser.add_argument('-c', "--instr_config", type=str,
+                        help="The configuration for the instructions")
+    parser.add_argument('-l', "--single", type=str,
+                        help="Used to compile a single instruction")
+    parser.add_argument('-b', "--bin", action="store_true",
+                        help="Used to compile to binary instead of hex")
     args = parser.parse_args()
     return args
 
@@ -252,10 +260,13 @@ if __name__ == "__main__":
     args = setup()
 
     if args.instr_config is not None:
-        config = set_config(args.instr_config)
+        f = open(args.instr_config)
+        config = json.load(f)
+        print(config)
+        f.close()
     else:
         config = minisrc
-    INSTR_MAP, FORMATS, COND_MAP = init_config()
+    INSTR_MAP, FORMATS, COND_MAP, TEXTFORMATS = init_config()
 
     if args.single is not None:
         convert_single(args.single)

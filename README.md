@@ -22,13 +22,27 @@ python3 minisrc-asm.py -s tests/instructions.s -o tests/instructions.hex
 
 ### Instruction set Configuration
 The configuration for can be (fully?) customized for any different instructions, opcodes, and binary formats.
-It would be useful to also add a textformat that can be configured, this would determine how the instructions should be parsed.
+
+To interpret a value in a field in a certain way, the field must have a certain string inside of it. The strings are:
+- opcode: raw value
+- R: as a register
+- imm: as an immediate value
 
 An example of a configuration is:
 ```json
 {
     "name": "example",
     "word_size": "32",
+    "textformats": [ // the fields must be in the order that they would be in assembly
+        {
+            "name": "one_reg",
+            "fields": [ "opcode", Ra ]
+        },
+        {
+            "name": "misc",
+            "fields": [ "opcode" ]
+        }
+    ],
     "conditions": {
         [
             {
