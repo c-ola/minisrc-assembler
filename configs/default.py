@@ -11,7 +11,7 @@ minisrc = {
         {
             "name": "store",
             "fields": [
-                "opcode", "c_imm_reg", "Ra"
+                "opcode", "c_imm_Rb", "Ra"
             ]
         },
         {
