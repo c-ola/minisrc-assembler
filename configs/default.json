@@ -11,7 +11,7 @@
         {
             "name": "store",
             "fields": [
-                "opcode", "c_imm_reg", "Ra"
+                "opcode", "Rb_c_imm", "Ra"
             ]
         },
         {
