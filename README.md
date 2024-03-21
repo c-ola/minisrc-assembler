@@ -4,6 +4,9 @@ Originally made this for ELEC374 Digital Systems Engineering
 
 Note: One feature that could be missing that is useful is custom ways to interpret values. At the moment you technically could do whatever you want in things like branch instructions through the opcode and extra formats, however the configurations for that would be very clunky. There might be a way to solve this similar to how conditions are done, however it is difficult for me to describe.
 
+ALSO: If you are using this for ELEC374 and notice any bugs/incorrect instructions, please let me know so that I can get them fixed. I think that everything should be working but I have yet to make sure.
+
+
 ## Usage
 Flag `-x` (`--hex`) makes the numbers output in hexadecimal to the file in utf-8.\
 `-b` makes it output binary in utf-8.\
